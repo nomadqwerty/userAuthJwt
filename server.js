@@ -11,6 +11,7 @@ const app = require("./app");
 
 const connectDB = async () => {
   const DB = process.env.DBCONSTR;
+  console.log(DB);
   try {
     let con = await mongoose.connect(DB, {
       useNewUrlParser: true,
