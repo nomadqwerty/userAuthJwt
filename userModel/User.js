@@ -1,5 +1,6 @@
 const { Schema, model } = require("mongoose");
 const _V = require("validator");
+const bCrypt = require("bcryptjs");
 
 const userShema = new Schema({
   name: {
@@ -58,6 +59,23 @@ const userShema = new Schema({
       message: `Incorrect value`,
     },
   },
+});
+
+userShema.pre("save", { document: true, query: false }, async function (next) {
+  // encrypt password
+  if (this.isNew || this.isModified("password")) {
+    this.password = await (async function (password) {
+      const unHashed = password;
+      // salt
+      let salt = await bCrypt.genSalt(12);
+      // hash
+      let hashed = await bCrypt.hash(unHashed, salt);
+      return hashed;
+    })(this.password);
+    this.passwordConfirm = undefined;
+    next();
+  }
+  return next();
 });
 
 const User = model("User", userShema);
