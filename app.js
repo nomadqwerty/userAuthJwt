@@ -8,3 +8,4 @@ module.exports = app;
 
 // userSignUp:
 app.post("/api/v2/users/signUp", userHandler.signUp);
+app.post("/api/v2/users/login", userHandler.login);
