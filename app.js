@@ -1,11 +1,16 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const userHandler = require("./handlers/authControllers");
+const authHandler = require("./handlers/authControllers");
+const userHandler = require("./handlers/userController");
 const app = express();
 app.use(bodyParser.json({}));
 
 module.exports = app;
 
 // userSignUp:
-app.post("/api/v2/users/signUp", userHandler.signUp);
-app.post("/api/v2/users/login", userHandler.login);
+app.post("/api/v2/users/signUp", authHandler.signUp);
+app.post("/api/v2/users/login", authHandler.login);
+
+// get users
+app.get("/api/v2/users", userHandler.getAllusers);
+app.get("/api/v2/users/:id", userHandler.getUserById);

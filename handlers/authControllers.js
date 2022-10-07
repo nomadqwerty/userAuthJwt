@@ -23,7 +23,7 @@ const passwordCompare = async (password, userPassword) => {
 exports.login = async (req, res, next) => {
   try {
     // get user data
-    const user = await User.find({ email: req.body.email });
+    const user = await User.find({ email: req.body.email }).select("password");
     const check = await passwordCompare(req.body.password, user[0].password);
 
     if (!check || !user) {
@@ -47,6 +47,7 @@ exports.login = async (req, res, next) => {
 exports.signUp = async (req, res, next) => {
   try {
     const user = await User.create(req.body);
+    user.password = undefined;
     console.log(String(user._id));
     console.log(typeof String(user._id));
     if (!user) {

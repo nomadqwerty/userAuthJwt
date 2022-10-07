@@ -47,6 +47,7 @@ const userShema = new Schema(
       type: String,
       required: [true, "Please enter a valid password"],
       minLength: [8, " at least 8 characters"],
+      select: false,
     },
     passwordConfirm: {
       type: String,
