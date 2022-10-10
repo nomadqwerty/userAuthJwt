@@ -1,5 +1,6 @@
 const User = require("../userModel/User");
 const bcrypt = require("bcryptjs");
+const utilityNode = require("util");
 
 // jwt:
 const jwt = require("jsonwebtoken");
@@ -29,13 +30,19 @@ exports.login = async (req, res, next) => {
     if (!check || !user) {
       throw new Error("invalid credentials");
     }
+    let cookieOptions = {
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+    };
+
     // create JWT
     const token = await tokenSign(String(user[0]._id));
+    res.cookie("jwt", token, cookieOptions);
     res.status(200).json({
       status: "success",
-      token,
     });
   } catch (error) {
+    console.log(error);
     // failed authentication
     res.status(401).json({
       status: "fail",
@@ -67,5 +74,36 @@ exports.signUp = async (req, res, next) => {
       status: "fail",
       error,
     });
+  }
+};
+
+exports.protect = async (req, res) => {
+  try {
+    let token;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer ")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookie) {
+      token = req.cookie.jwt;
+    }
+    if (!token) {
+      throw new Error("");
+    }
+    // verify jwt.
+    const jwtPromise = utilityNode.promisify(jwt.verify);
+    // decoded object
+    const decoded = await jwtPromise(token, process.env.JWT_SECRET);
+
+    const freshUser = await User.findById(decoded.ID);
+
+    if (!freshUser) {
+      throw new Error("");
+    }
+    res.status(200).send("protect");
+  } catch (error) {
+    console.log(error.name);
+    res.status(400).send("failed");
   }
 };
