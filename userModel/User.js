@@ -61,8 +61,25 @@ const userShema = new Schema(
         message: `Incorrect value`,
       },
     },
+    passwordChangedAt: {
+      type: Date,
+    },
   },
-  { strictQuery: true, toJSON: { virtual: true }, toObject: { virtual: true } }
+  {
+    strictQuery: true,
+    toJSON: { virtual: true },
+    toObject: { virtual: true },
+    methods: {
+      passwordChangedBeforeJwt(jwtStamp) {
+        if (this.passwordChangedAt) {
+          const changeStamp = this.passwordChangedAt.getTime() / 1000;
+          return changeStamp < jwtStamp;
+        }
+
+        return true;
+      },
+    },
+  }
 );
 
 userShema.pre("save", { document: true, query: false }, async function (next) {

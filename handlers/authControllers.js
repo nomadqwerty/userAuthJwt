@@ -40,6 +40,7 @@ exports.login = async (req, res, next) => {
     res.cookie("jwt", token, cookieOptions);
     res.status(200).json({
       status: "success",
+      token: token,
     });
   } catch (error) {
     console.log(error);
@@ -95,12 +96,22 @@ exports.protect = async (req, res) => {
     const jwtPromise = utilityNode.promisify(jwt.verify);
     // decoded object
     const decoded = await jwtPromise(token, process.env.JWT_SECRET);
-
     const freshUser = await User.findById(decoded.ID);
 
     if (!freshUser) {
       throw new Error("");
     }
+
+    // check if passwordchanged before jwt was issued
+    const passwordChangedBefore = freshUser.passwordChangedBeforeJwt(
+      decoded.iat
+    );
+    if (!passwordChangedBefore) {
+      throw new Error("");
+    }
+
+    // add to req object so next middleware can use the user object
+    req.user = freshUser;
     res.status(200).send("protect");
   } catch (error) {
     console.log(error.name);
