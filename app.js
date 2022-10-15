@@ -21,9 +21,9 @@ app.get("/api/v2/users/:id", userHandler.getUserById);
 
 // route to protect.
 
-app.use(authHandler.protect);
+app.use(authHandler.protect, authHandler.restrictTo(["worker"]));
 
 app.get("/api/v2/resource", (req, res) => {
   res.status(200);
-  res.send("resource");
+  res.send("you have been authenticated and authorized to use this resource");
 });

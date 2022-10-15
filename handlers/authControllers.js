@@ -78,7 +78,7 @@ exports.signUp = async (req, res, next) => {
   }
 };
 
-exports.protect = async (req, res) => {
+exports.protect = async (req, res, next) => {
   try {
     let token;
     if (
@@ -112,9 +112,23 @@ exports.protect = async (req, res) => {
 
     // add to req object so next middleware can use the user object
     req.user = freshUser;
-    res.status(200).send("protect");
+    next();
   } catch (error) {
     console.log(error.name);
     res.status(400).send("failed");
   }
+};
+
+exports.restrictTo = (array) => {
+  return async (req, res, next) => {
+    try {
+      if (!array.includes(req.user.role)) {
+        throw new Error("error occured");
+      }
+      next();
+    } catch (error) {
+      console.log(error.message);
+      res.status(403).send("forbidden");
+    }
+  };
 };

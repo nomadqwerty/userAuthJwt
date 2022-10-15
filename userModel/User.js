@@ -26,6 +26,10 @@ const userShema = new Schema(
       type: String,
       required: [true, "Please enter an Occupation"],
     },
+    role: {
+      type: String,
+      enum: ["client", "worker"],
+    },
 
     location: {
       type: {
