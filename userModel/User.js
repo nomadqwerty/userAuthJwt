@@ -1,6 +1,7 @@
 const { Schema, model } = require("mongoose");
 const _V = require("validator");
 const bCrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 const userShema = new Schema(
   {
@@ -68,6 +69,8 @@ const userShema = new Schema(
     passwordChangedAt: {
       type: Date,
     },
+    passwordResetString: String,
+    passwordResetTokenHash: String,
   },
   {
     strictQuery: true,
@@ -81,6 +84,21 @@ const userShema = new Schema(
         }
 
         return true;
+      },
+      passwordResetToken() {
+        // token to send to user
+        let token = crypto.randomBytes(32).toString("hex");
+        console.log(token);
+
+        // hash token to save to DB
+        let hash = crypto.createHash("sha256").update(token).digest("hex");
+
+        this.passwordResetString = token;
+        this.passwordResetTokenHash = hash;
+
+        this.resetTokenExpiresIn = Date.now() + 10 * 60 * 1000;
+
+        return token;
       },
     },
   }

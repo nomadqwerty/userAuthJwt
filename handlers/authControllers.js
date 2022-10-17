@@ -1,6 +1,7 @@
 const User = require("../userModel/User");
 const bcrypt = require("bcryptjs");
 const utilityNode = require("util");
+const sendMail = require("../utils/email");
 
 // jwt:
 const jwt = require("jsonwebtoken");
@@ -97,7 +98,6 @@ exports.protect = async (req, res, next) => {
     // decoded object
     const decoded = await jwtPromise(token, process.env.JWT_SECRET);
     const freshUser = await User.findById(decoded.ID);
-
     if (!freshUser) {
       throw new Error("");
     }
@@ -131,4 +131,51 @@ exports.restrictTo = (array) => {
       res.status(403).send("forbidden");
     }
   };
+};
+
+exports.forgortPassword = async (req, res, next) => {
+  //TODO: use findOne instead.
+  let user = await User.findOne({ email: req.body.email });
+  try {
+    if (!user) {
+      throw new Error("no user found");
+    }
+    const token = user.passwordResetToken();
+    // turn off validation
+    await user.save({ validateBeforeSave: false });
+
+    const protocol = req.protocol;
+    const domain = req.get("host");
+
+    // reset url for user
+    const resetUrl = `${protocol}://${domain}/api/v2/users/resetPassword/${token}`;
+
+    //   message to  send by email
+    const message = `Forgot password? submit a patch request with your new password and confirm to:${resetUrl}\n If not please ignore this message`;
+
+    let mailOptions = {
+      email: user.email,
+      subject: "password reset token sent through email",
+      message,
+    };
+    await sendMail(mailOptions);
+    console.log(user);
+    res.status(200).send("ok");
+  } catch (error) {
+    console.log(error.message);
+
+    //   reset the user fields to undefiined,
+    if (user) {
+      user.passwordResetToken = undefined;
+      user.resetTokenExpiresIn = undefined;
+      await user.save({ validateBeforeSave: false });
+    }
+    // save
+
+    res.status(500).send("error");
+  }
+};
+
+exports.resetPassword = async (req, res, next) => {
+  res.status(200).send("restpassword");
 };

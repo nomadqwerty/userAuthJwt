@@ -19,6 +19,9 @@ app.get("/api/v2/users", userHandler.getAllusers);
 // by id
 app.get("/api/v2/users/:id", userHandler.getUserById);
 
+app.post("/api/v2/users/forgotPassword", authHandler.forgortPassword);
+app.patch("/api/v2/users/resetPassword/:token", authHandler.resetPassword);
+
 // route to protect.
 
 app.use(authHandler.protect, authHandler.restrictTo(["worker"]));
