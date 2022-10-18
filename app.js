@@ -24,7 +24,11 @@ app.patch("/api/v2/users/resetPassword/:token", authHandler.resetPassword);
 
 // route to protect.
 
-app.use(authHandler.protect, authHandler.restrictTo(["worker"]));
+app.use(
+  "/api/v2/resource",
+  authHandler.protect,
+  authHandler.restrictTo(["worker"])
+);
 
 app.get("/api/v2/resource", (req, res) => {
   res.status(200);

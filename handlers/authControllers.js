@@ -2,6 +2,7 @@ const User = require("../userModel/User");
 const bcrypt = require("bcryptjs");
 const utilityNode = require("util");
 const sendMail = require("../utils/email");
+const crypto = require("crypto");
 
 // jwt:
 const jwt = require("jsonwebtoken");
@@ -114,7 +115,7 @@ exports.protect = async (req, res, next) => {
     req.user = freshUser;
     next();
   } catch (error) {
-    console.log(error.name);
+    console.log(error);
     res.status(400).send("failed");
   }
 };
@@ -127,7 +128,7 @@ exports.restrictTo = (array) => {
       }
       next();
     } catch (error) {
-      console.log(error.message);
+      console.log(error);
       res.status(403).send("forbidden");
     }
   };
@@ -162,7 +163,7 @@ exports.forgortPassword = async (req, res, next) => {
     console.log(user);
     res.status(200).send("ok");
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
 
     //   reset the user fields to undefiined,
     if (user) {
@@ -177,5 +178,34 @@ exports.forgortPassword = async (req, res, next) => {
 };
 
 exports.resetPassword = async (req, res, next) => {
-  res.status(200).send("restpassword");
+  try {
+    // hash token in req.params
+    const token = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+    // find user based of token and passExprire gte now
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gte: Date.now() },
+    });
+    if (!user) {
+      throw new Error("no user found");
+    }
+    if (!req.body.password) {
+      throw new Error("please provide new password");
+    }
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save({ validateBeforeSave: true });
+
+    console.log(user);
+
+    res.status(200).send("restpassword");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
 };
