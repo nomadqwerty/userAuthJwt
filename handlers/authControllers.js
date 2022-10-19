@@ -92,7 +92,7 @@ exports.protect = async (req, res, next) => {
       token = req.cookie.jwt;
     }
     if (!token) {
-      throw new Error("");
+      throw new Error("no jwt token");
     }
     // verify jwt.
     const jwtPromise = utilityNode.promisify(jwt.verify);
@@ -100,7 +100,7 @@ exports.protect = async (req, res, next) => {
     const decoded = await jwtPromise(token, process.env.JWT_SECRET);
     const freshUser = await User.findById(decoded.ID);
     if (!freshUser) {
-      throw new Error("");
+      throw new Error("forbidden");
     }
 
     // check if passwordchanged before jwt was issued
@@ -108,14 +108,14 @@ exports.protect = async (req, res, next) => {
       decoded.iat
     );
     if (!passwordChangedBefore) {
-      throw new Error("");
+      throw new Error("forbidden jwt token");
     }
 
     // add to req object so next middleware can use the user object
     req.user = freshUser;
     next();
   } catch (error) {
-    console.log(error);
+    console.log(error.message);
     res.status(400).send("failed");
   }
 };
@@ -161,6 +161,7 @@ exports.forgortPassword = async (req, res, next) => {
     };
     await sendMail(mailOptions);
     console.log(user);
+
     res.status(200).send("ok");
   } catch (error) {
     console.log(error);
@@ -199,13 +200,43 @@ exports.resetPassword = async (req, res, next) => {
     user.passwordConfirm = req.body.passwordConfirm;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
-
+    user.passwordResetString = undefined;
+    user.passwordResetTokenHash = undefined;
     await user.save({ validateBeforeSave: true });
-
-    console.log(user);
 
     res.status(200).send("restpassword");
   } catch (error) {
     res.status(500).send(error.message);
+  }
+};
+
+// update password:user
+exports.updatePassword = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user) {
+      throw new Error(`no user found`);
+    }
+    // check req.body.password is = user.password
+    let password = user.password;
+    let reqPass = req?.body.oldPassword || "check";
+    let newPass = req.body.password;
+    let check = await passwordCompare(reqPass, password);
+    if (!check) {
+      throw new Error(`Invalid password`);
+    }
+    const wasNotChanged = await passwordCompare(newPass, password);
+
+    if (wasNotChanged) {
+      throw new Error("please enter a new password");
+    }
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    await user.save();
+    res.status(200).send("succes");
+  } catch (error) {
+    console.log(error);
+    res.status(403).send(error.message);
   }
 };

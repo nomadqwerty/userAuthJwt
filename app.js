@@ -34,3 +34,12 @@ app.get("/api/v2/resource", (req, res) => {
   res.status(200);
   res.send("you have been authenticated and authorized to use this resource");
 });
+
+//
+app.use(
+  "/api/v2/users/updateMe",
+  authHandler.protect,
+  authHandler.restrictTo(["worker"])
+);
+
+app.patch("/api/v2/users/updateMe/:id", authHandler.updatePassword);
