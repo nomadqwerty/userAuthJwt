@@ -22,6 +22,7 @@ const userShema = new Schema(
         },
         message: `invalid email address`,
       },
+      unique: true,
     },
     occupation: {
       type: String,
